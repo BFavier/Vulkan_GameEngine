@@ -178,5 +178,4 @@ void Window::create_window(const WindowSettings& settings)
     {
         THROW_ERROR("Failed to create the Vulkan surface")
     }
-
 }
