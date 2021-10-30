@@ -1,20 +1,64 @@
 #include <GameEngine/graphics/GPU.hpp>
 #include <GameEngine/utilities/Macro.hpp>
+#include <set>
 
 using namespace GameEngine;
 
 GPU::GPU(VkPhysicalDevice device)
 {
+    // Save physical device
+    _physical_device = device;
+    // List properties and features
     vkGetPhysicalDeviceProperties(device, &_device_properties);
     vkGetPhysicalDeviceFeatures(device, &_device_features);
     vkGetPhysicalDeviceMemoryProperties(device, &_device_memory);
+    // List the queues
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+    // Select the best matching queue families
+    std::map<uint32_t, uint32_t> selected_families_count;
+    std::optional<uint32_t> graphics_family = _select_queue_family(queue_families, VK_QUEUE_GRAPHICS_BIT, selected_families_count);
+    std::optional<uint32_t> transfer_family = _select_queue_family(queue_families, VK_QUEUE_TRANSFER_BIT, selected_families_count);
+    std::optional<uint32_t> compute_family = _select_queue_family(queue_families, VK_QUEUE_COMPUTE_BIT, selected_families_count);
+    // Create the queue creation infos
+    float priority = 1.;
+    std::vector<VkDeviceQueueCreateInfo> selected_families;
+    for (std::pair<const uint32_t, uint32_t>& queue_family_count : selected_families_count)
+    {
+        VkDeviceQueueCreateInfo info;
+        info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        info.queueFamilyIndex = queue_family_count.first;
+        info.queueCount = queue_family_count.second;
+        info.pQueuePriorities = &priority;
+        selected_families.push_back(info);
+    }
+    // Create logical device
+    _logical_device.reset(new VkDevice, GPU::_destroy_device);
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pQueueCreateInfos = &selected_families[0];
+    createInfo.queueCreateInfoCount = selected_families.size();
+    createInfo.pEnabledFeatures = &_device_features;
+    VkResult result = vkCreateDevice(_physical_device, &createInfo, nullptr, _logical_device.get());
+    if (result != VK_SUCCESS)
+    {
+        THROW_ERROR("failed to create logical device")
+    }
+    // retrieve the queue handles
+    _query_queue_handle(_graphics_queue, graphics_family, selected_families_count);
+    _query_queue_handle(_transfer_queue, transfer_family, selected_families_count);
+    _query_queue_handle(_compute_queue, compute_family, selected_families_count);
 }
 
 GPU::GPU(const GPU& other)
 {
+    _logical_device = other._get_logical_device();
+    _physical_device = other._get_physical_device();
     _device_features = other._get_device_features();
     _device_memory = other._get_device_memory();
-    _device_properties = other._get_device_propeties();
+    _device_properties = other._get_device_properties();
 }
 
 GPU::~GPU()
@@ -43,7 +87,7 @@ std::string GPU::constructor_name() const
         case 0x8086:
             return std::string("Intel");
         default:
-            return std::string("UNKNOWN_CONSTRUCTOR");
+            return std::string("UNKNOWN");
     }
 }
 
@@ -146,17 +190,142 @@ GPU GPU::get_best_device()
     return subset[i_max];
 }
 
-VkPhysicalDeviceProperties GPU::_get_device_propeties() const
+void GPU::_destroy_device(VkDevice* logical_device)
+{
+    if (logical_device != nullptr)
+    {
+        vkDestroyDevice(*logical_device, nullptr);
+        delete logical_device;
+    }
+}
+
+void GPU::operator=(const GPU& other)
+{
+    _graphics_queue = other._get_graphics_queue();
+    _compute_queue = other._get_compute_queue();
+    _transfer_queue = other._get_transfer_queue();
+    _physical_device = other._get_physical_device();
+    _logical_device = other._get_logical_device();
+    _device_properties = other._get_device_properties();
+    _device_features = other._get_device_features();
+    _device_memory = other._get_device_memory();
+}
+
+const std::optional<VkQueue>& GPU::_get_graphics_queue() const
+{
+    return _graphics_queue;
+}
+
+const std::optional<VkQueue>& GPU::_get_transfer_queue() const
+{
+    return _transfer_queue;
+}
+
+const std::optional<VkQueue>& GPU::_get_compute_queue() const
+{
+    return _compute_queue;
+}
+
+const VkPhysicalDevice& GPU::_get_physical_device() const
+{
+    return _physical_device;
+}
+
+const std::shared_ptr<VkDevice>& GPU::_get_logical_device() const
+{
+    return _logical_device;
+}
+
+const VkPhysicalDeviceProperties& GPU::_get_device_properties() const
 {
     return _device_properties;
 }
 
-VkPhysicalDeviceFeatures GPU::_get_device_features() const
+const VkPhysicalDeviceFeatures& GPU::_get_device_features() const
 {
     return _device_features;
 }
 
-VkPhysicalDeviceMemoryProperties GPU::_get_device_memory() const
+const VkPhysicalDeviceMemoryProperties& GPU::_get_device_memory() const
 {
     return _device_memory;
+}
+
+std::optional<uint32_t> GPU::_select_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
+                                                  VkQueueFlagBits queue_type,
+                                                  std::map<uint32_t, uint32_t>& selected_families_count) const
+{
+    std::vector<VkQueueFlagBits> functionalities = {VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT};
+    // filter families that handle the operation type
+    std::map<uint32_t, VkQueueFamilyProperties> valid_families;
+    for (uint32_t i=0; i<queue_families.size(); i++)
+    {
+        VkQueueFamilyProperties& queue_family = queue_families[i];
+        if ((queue_family.queueFlags & queue_type) &&
+            (queue_family.queueCount > 0))
+        {
+            valid_families[i] = queue_family;
+        }
+    }
+    // Looking for the most specialized queue
+    std::optional<uint32_t> selected_family;
+    unsigned int min_n_functionalities;
+    for (std::pair<const uint32_t, VkQueueFamilyProperties>& family : valid_families)
+    {
+        // if there is no selected family yet, set current family and number of functionalities
+        if (!selected_family.has_value())
+        {
+            selected_family = family.first;
+            VkQueueFlags flags = family.second.queueFlags;
+            min_n_functionalities = 0;
+            for (VkQueueFlagBits bits : functionalities)
+            {
+                min_n_functionalities += (flags & bits) / bits;
+            }
+        }
+        // otherwise change selected family only if it has less functionalities
+        else
+        {
+            VkQueueFlags flags = family.second.queueFlags;
+            unsigned int n_functionalities = 0;
+            for (VkQueueFlagBits bits : functionalities)
+            {
+                n_functionalities += (flags & bits) / bits;
+            }
+            if (n_functionalities < min_n_functionalities)
+            {
+                selected_family = family.first;
+            }
+        }
+    }
+    // if a family was selected decrement its number of available queues, and increment its selected count
+    if (selected_family.has_value())
+    {
+        queue_families[selected_family.value()].queueCount -= 1;
+        if (selected_families_count.find(selected_family.value()) != selected_families_count.end())
+        {
+            selected_families_count[selected_family.value()] += 1;
+        }
+        else
+        {
+            selected_families_count[selected_family.value()] = 1;
+        }
+    }
+    // return the selected family if there was any
+    return selected_family;
+}
+
+
+void GPU::_query_queue_handle(std::optional<VkQueue>& queue,
+                              const std::optional<uint32_t>& queue_family,
+                              std::map<uint32_t, uint32_t>& selected_families_count) const
+{
+    if (queue_family.has_value())
+    {
+        uint32_t family = queue_family.value();
+        VkQueue queried_queue;
+        vkGetDeviceQueue(*_logical_device, family, selected_families_count[family]-1, &queried_queue);
+        queue = queried_queue;
+        selected_families_count[family] -= 1;
+    }
 }
