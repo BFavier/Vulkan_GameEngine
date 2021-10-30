@@ -1,6 +1,7 @@
 #pragma once
 #include <GameEngine/utilities/External.hpp>
 #include <GameEngine/utilities/Macro.hpp>
+#include <vector>
 
 namespace GameEngine
 {
@@ -9,7 +10,7 @@ namespace GameEngine
     {
     public:
         //Initialize the used libraries
-        static void initialize();
+        static void initialize(bool debug=false);
         static void terminate();
         static VkInstance get_vulkan_instance();
     protected:

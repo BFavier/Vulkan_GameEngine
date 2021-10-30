@@ -5,7 +5,7 @@ using namespace GameEngine;
 bool Engine::_initialized = false;
 VkInstance Engine::_vk_instance;
 
-void Engine::initialize()
+void Engine::initialize(bool debug)
 {
     if (_initialized)
     {
@@ -17,6 +17,11 @@ void Engine::initialize()
         THROW_ERROR("Failed to initialize the library GLFW")
     }
     //Initialize Vulkan
+    std::vector<const char*> validation_layers;
+    if (debug)
+    {
+        validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+    }
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "GameEngine";
@@ -27,6 +32,7 @@ void Engine::initialize()
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
+    createInfo.ppEnabledLayerNames = validation_layers.data();
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);

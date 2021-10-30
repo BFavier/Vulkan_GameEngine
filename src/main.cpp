@@ -6,6 +6,7 @@ using namespace GameEngine;
 
 int main()
 {
+    Engine::initialize(true);
     Window window;
     Mouse& mouse = window.mouse;
     GPU gpu = GPU::get_best_device();

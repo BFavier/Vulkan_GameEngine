@@ -27,7 +27,7 @@ GPU::GPU(VkPhysicalDevice device)
     std::vector<VkDeviceQueueCreateInfo> selected_families;
     for (std::pair<const uint32_t, uint32_t>& queue_family_count : selected_families_count)
     {
-        VkDeviceQueueCreateInfo info;
+        VkDeviceQueueCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         info.queueFamilyIndex = queue_family_count.first;
         info.queueCount = queue_family_count.second;
@@ -36,12 +36,12 @@ GPU::GPU(VkPhysicalDevice device)
     }
     // Create logical device
     _logical_device.reset(new VkDevice, GPU::_destroy_device);
-    VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &selected_families[0];
-    createInfo.queueCreateInfoCount = selected_families.size();
-    createInfo.pEnabledFeatures = &_device_features;
-    VkResult result = vkCreateDevice(_physical_device, &createInfo, nullptr, _logical_device.get());
+    VkDeviceCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    create_info.pQueueCreateInfos = selected_families.data();
+    create_info.queueCreateInfoCount = selected_families.size();
+    create_info.pEnabledFeatures = &_device_features;
+    VkResult result = vkCreateDevice(_physical_device, &create_info, nullptr, _logical_device.get());
     if (result != VK_SUCCESS)
     {
         THROW_ERROR("failed to create logical device")
