@@ -1,3 +1,6 @@
 /.vscode
 /external
 /Vulkan Tutorial en.pdf
+*.o
+*.d
+*.exe
