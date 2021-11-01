@@ -12,6 +12,7 @@ void Engine::initialize(const std::vector<std::string>& validation_layers)
     {
         return;
     }
+    _initialized = true;
     //Initialize GLFW
     if (!glfwInit())
     {
@@ -80,6 +81,8 @@ void Engine::terminate()
     vkDestroyInstance(_vk_instance, nullptr);
     //Terminate GLFW
     glfwTerminate();
+    //set the flag back
+    _initialized = false;
 }
 
 std::vector<std::string> Engine::get_available_validation_layers()

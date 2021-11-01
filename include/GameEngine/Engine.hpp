@@ -8,7 +8,6 @@
 
 namespace GameEngine
 {
-
     class Engine
     {
     public:
