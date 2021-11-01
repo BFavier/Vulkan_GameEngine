@@ -10,8 +10,9 @@ namespace GameEngine
     {
     public:
         //Initialize the used libraries
-        static void initialize(bool debug=false);
+        static void initialize(const std::vector<std::string>& validation_layers={});
         static void terminate();
+        static std::vector<std::string> get_validation_layers();
         static VkInstance get_vulkan_instance();
     protected:
         ///< If true, the game engine was already initialized

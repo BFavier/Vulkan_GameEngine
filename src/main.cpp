@@ -6,7 +6,13 @@ using namespace GameEngine;
 
 int main()
 {
-    Engine::initialize(true);
+    std::cout << "listing available validation layers:" << std::endl;
+    std::vector<std::string> layer_names = Engine::get_validation_layers();
+    for (std::string& name : layer_names)
+    {
+        std::cout << "\t" << name << std::endl;
+    }
+    Engine::initialize({"VK_LAYER_KHRONOS_validation"});
     Window window;
     Mouse& mouse = window.mouse;
     GPU gpu = GPU::get_best_device();

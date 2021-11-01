@@ -12,9 +12,9 @@ LIB := glfw3 gdi32 vulkan-1
 #DLLs to use (must be in the bin folder, ".dll" extension must be omitted)
 DLL := 
 #Directories in which to look for the headers
-IDIR := include C:\VulkanSDK\1.2.148.1\Include
+IDIR := include C:\VulkanSDK\1.2.189.2\Include
 #Directories in which to look for the libraries
-LDIR := lib C:\VulkanSDK\1.2.148.1\Lib
+LDIR := lib C:\VulkanSDK\1.2.189.2\Lib
 
 #define a recursive wildcard function
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
