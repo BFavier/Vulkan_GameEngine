@@ -6,6 +6,8 @@ using namespace GameEngine;
 
 GPU::GPU(VkPhysicalDevice device)
 {
+    // device extensions
+    const std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     // Save physical device
     _physical_device = device;
     // List properties and features

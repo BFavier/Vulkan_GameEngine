@@ -6,8 +6,14 @@ using namespace GameEngine;
 
 int main()
 {
+    std::cout << "listing available vulkan extensions: " << std::endl;
+    std::vector<std::string> available_extensions = Engine::get_available_vulkan_extensions();
+    for (std::string& extension : available_extensions)
+    {
+        std::cout << "\t" << extension << std::endl;
+    }
     std::cout << "listing available validation layers:" << std::endl;
-    std::vector<std::string> layer_names = Engine::get_validation_layers();
+    std::vector<std::string> layer_names = Engine::get_available_validation_layers();
     for (std::string& name : layer_names)
     {
         std::cout << "\t" << name << std::endl;
