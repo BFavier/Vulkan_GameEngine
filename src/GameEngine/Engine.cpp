@@ -39,12 +39,19 @@ void Engine::initialize(const std::vector<std::string>& validation_layers)
         validation_layer_names.push_back(layer_name.c_str());
     }
     // Initialize Vulkan
+    VkDebugUtilsMessengerCreateInfoEXT debug_create_info = {};
+    debug_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debug_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debug_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debug_create_info.pfnUserCallback = _debug_callback;
+    debug_create_info.pUserData = nullptr;
     std::vector<const char*> extensions = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledLayerCount = validation_layer_names.size();
     createInfo.ppEnabledLayerNames = validation_layer_names.data();
+    createInfo.pNext = &debug_create_info;
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -60,13 +67,7 @@ void Engine::initialize(const std::vector<std::string>& validation_layers)
         THROW_ERROR("Failed to create the Vulkan instance")
     }
     // setup validation layers callback function
-    VkDebugUtilsMessengerCreateInfoEXT debugInfo = {};
-    debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    debugInfo.pfnUserCallback = _debug_callback;
-    debugInfo.pUserData = nullptr;
-    if (_create_debug_utils_messenger_EXT(_vk_instance, &debugInfo, nullptr, &_debug_messenger) != VK_SUCCESS)
+    if (_create_debug_utils_messenger_EXT(_vk_instance, &debug_create_info, nullptr, &_debug_messenger) != VK_SUCCESS)
     {
         THROW_ERROR("Failed to set up debug messenger")
     }
@@ -124,9 +125,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Engine::_debug_callback(VkDebugUtilsMessageSeveri
                                                        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                        void* pUserData)
 {
-    pCallbackData;
-    pUserData;
-    messageType;
+    //silencing unused variables
+    (void)pCallbackData;
+    (void)pUserData;
+    (void)messageType;
+
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
     {
         std::cerr << "[validation layer]" << std::endl;
