@@ -6,23 +6,10 @@ using namespace GameEngine;
 
 int main()
 {
-    std::cout << "listing available vulkan extensions: " << std::endl;
-    std::vector<std::string> available_extensions = Engine::get_available_vulkan_extensions();
-    for (std::string& extension : available_extensions)
-    {
-        std::cout << "\t" << extension << std::endl;
-    }
-    std::cout << "listing available validation layers:" << std::endl;
-    std::vector<std::string> layer_names = Engine::get_available_validation_layers();
-    for (std::string& name : layer_names)
-    {
-        std::cout << "\t" << name << std::endl;
-    }
     Engine::initialize({"VK_LAYER_KHRONOS_validation"});
     Window window;
     Mouse& mouse = window.mouse;
     GPU gpu = GPU::get_best_device();
-    std::cout << gpu.constructor_name() << " - " << gpu.device_name() << " : " << gpu.memory() << " (" << gpu.type() << ")" << std::endl;
     while(window.is_open())
     {
         double dx = mouse.dx();
