@@ -12,7 +12,7 @@ LIB := glfw3 gdi32 vulkan-1
 #DLLs to use (must be in the bin folder, ".dll" extension must be omitted)
 DLL := 
 #Directories in which to look for the headers
-IDIR := include C:\VulkanSDK\1.2.189.2\Include
+IDIR := include
 #Directories in which to look for the libraries
 LDIR := lib C:\VulkanSDK\1.2.189.2\Lib
 
