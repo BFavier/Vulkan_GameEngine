@@ -142,7 +142,7 @@ std::vector<GPU> GPU::get_devices()
     std::vector<GPU> GPUs;
     for(VkPhysicalDevice& device : devices)
     {
-        GPUs.push_back(device);
+        GPUs.push_back(GPU(device, nullptr));
     }
     return GPUs;
 }
