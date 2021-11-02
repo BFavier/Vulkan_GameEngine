@@ -157,7 +157,7 @@ std::string Keyboard::get_key_name(int key, int scancode)
 
 void Keyboard::link()
 {
-    glfwSetKeyCallback(_window->glfw(), Keyboard::key_callback);
+    glfwSetKeyCallback(_window->_glfw(), Keyboard::key_callback);
     _keys.clear();
     for (int i=0; i<357; i++)
     {

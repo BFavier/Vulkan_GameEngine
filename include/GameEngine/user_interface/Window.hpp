@@ -71,8 +71,10 @@ namespace GameEngine
         bool vsync() const;
         ///< Enables or disable vertical syncing
         void vsync(bool enabled);
+    public:
+        const VkSurfaceKHR& _get_vk_surface() const;
         ///< Returns the GLFW window pointer
-        GLFWwindow* glfw() const;
+        GLFWwindow* _glfw() const;
     public:
         ///< This function is called when a window is resized
         static void _resize_callback(GLFWwindow* window, int width, int height);

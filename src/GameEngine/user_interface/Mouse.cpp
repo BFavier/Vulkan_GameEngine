@@ -73,11 +73,11 @@ void Mouse::hide(bool h)
 {
     if (h)
     {
-        glfwSetInputMode(_window->glfw(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(_window->_glfw(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     else
     {
-        glfwSetInputMode(_window->glfw(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetInputMode(_window->_glfw(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
     _hidden = h;
 }
@@ -165,10 +165,10 @@ void Mouse::link()
 {
     if (glfwRawMouseMotionSupported())
     {
-        glfwSetInputMode(_window->glfw(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        glfwSetInputMode(_window->_glfw(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     }
-    glfwSetMouseButtonCallback(_window->glfw(), button_callback);
-    glfwSetCursorPosCallback(_window->glfw(), position_callback);
-    glfwSetScrollCallback(_window->glfw(), scroll_callback);
-    glfwGetCursorPos(_window->glfw(), &_x, &_y);
+    glfwSetMouseButtonCallback(_window->_glfw(), button_callback);
+    glfwSetCursorPosCallback(_window->_glfw(), position_callback);
+    glfwSetScrollCallback(_window->_glfw(), scroll_callback);
+    glfwGetCursorPos(_window->_glfw(), &_x, &_y);
 }

@@ -128,7 +128,12 @@ void Window::vsync(bool enabled)
     }
 }
 
-GLFWwindow* Window::glfw() const
+const VkSurfaceKHR& Window::_get_vk_surface() const
+{
+    return _vk_surface;
+}
+
+GLFWwindow* Window::_glfw() const
 {
     return _glfw_window;
 }

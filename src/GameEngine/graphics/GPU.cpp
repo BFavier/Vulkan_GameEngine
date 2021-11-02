@@ -328,8 +328,8 @@ std::optional<uint32_t> GPU::_select_present_queue_family(std::vector<VkQueueFam
     {
         for (uint32_t i=0; i<queue_families.size(); i++)
         {
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, window->surface, &presentSupport);
+            VkBool32 present_support = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, window->_get_vk_surface(), &present_support);
         }
     }
 }
