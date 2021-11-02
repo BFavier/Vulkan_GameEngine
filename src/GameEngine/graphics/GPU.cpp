@@ -1,10 +1,11 @@
 #include <GameEngine/graphics/GPU.hpp>
 #include <GameEngine/utilities/Macro.hpp>
 #include <set>
+#include <GameEngine/user_interface/Window.hpp>
 
 using namespace GameEngine;
 
-GPU::GPU(VkPhysicalDevice device)
+GPU::GPU(VkPhysicalDevice device, const Window* window)
 {
     // device extensions
     const std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -24,6 +25,7 @@ GPU::GPU(VkPhysicalDevice device)
     std::optional<uint32_t> graphics_family = _select_queue_family(queue_families, VK_QUEUE_GRAPHICS_BIT, selected_families_count);
     std::optional<uint32_t> transfer_family = _select_queue_family(queue_families, VK_QUEUE_TRANSFER_BIT, selected_families_count);
     std::optional<uint32_t> compute_family = _select_queue_family(queue_families, VK_QUEUE_COMPUTE_BIT, selected_families_count);
+    std::optional<uint32_t> present_family = _select_present_queue_family(queue_families, window, selected_families_count);
     // Create the queue creation infos
     float priority = 1.;
     std::vector<VkDeviceQueueCreateInfo> selected_families;
@@ -315,6 +317,21 @@ std::optional<uint32_t> GPU::_select_queue_family(std::vector<VkQueueFamilyPrope
     }
     // return the selected family if there was any
     return selected_family;
+}
+
+std::optional<uint32_t> GPU::_select_present_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
+                                                          const Window* window,
+                                                          std::map<uint32_t, uint32_t>& selected_families_count) const
+{
+    std::optional<uint32_t> queue_family;
+    if (window != nullptr)
+    {
+        for (uint32_t i=0; i<queue_families.size(); i++)
+        {
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, window->surface, &presentSupport);
+        }
+    }
 }
 
 

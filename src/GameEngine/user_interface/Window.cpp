@@ -133,7 +133,7 @@ GLFWwindow* Window::glfw() const
     return _glfw_window;
 }
 
-void Window::resize_callback(GLFWwindow* window, int width, int height)
+void Window::_resize_callback(GLFWwindow* window, int width, int height)
 {
     Window* h = static_cast<Window*>(glfwGetWindowUserPointer(window));
     h->resize(width, height);
@@ -171,7 +171,7 @@ void Window::create_window(const WindowSettings& settings)
     mouse.link();
     keyboard.link();
     //set the resize callback
-    glfwSetWindowSizeCallback(_glfw_window, resize_callback);
+    glfwSetWindowSizeCallback(_glfw_window, _resize_callback);
     // Create the vkSurface
     VkResult result = glfwCreateWindowSurface(Engine::get_vulkan_instance(), _glfw_window, NULL, &_vk_surface);
     if (result != VK_SUCCESS)

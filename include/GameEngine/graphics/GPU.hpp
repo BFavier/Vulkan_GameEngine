@@ -9,6 +9,8 @@
 
 namespace GameEngine
 {
+    class Window;
+
     class GPU
     {
 
@@ -16,7 +18,7 @@ namespace GameEngine
 
     public:
         GPU() = delete;
-        GPU(VkPhysicalDevice device);
+        GPU(VkPhysicalDevice device, const Window* window);
         GPU(const GPU& other);
         ~GPU();
         // Device name
@@ -46,6 +48,7 @@ namespace GameEngine
         std::optional<VkQueue> _graphics_queue;
         std::optional<VkQueue> _transfer_queue;
         std::optional<VkQueue> _compute_queue;
+        std::optional<VkQueue> _presentation_queue;
         VkPhysicalDevice _physical_device;
         std::shared_ptr<VkDevice> _logical_device;
         VkPhysicalDeviceProperties _device_properties;
@@ -56,6 +59,10 @@ namespace GameEngine
         std::optional<uint32_t> _select_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
                                                      VkQueueFlagBits queue_type,
                                                      std::map<uint32_t, uint32_t>& selected_families_count) const;
+        // select the present queue family specificaly
+        std::optional<uint32_t> _select_present_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
+                                                             const Window* window,
+                                                             std::map<uint32_t, uint32_t>& selected_families_count) const;
         // query the queue handle of a previously created queue
         void _query_queue_handle(std::optional<VkQueue>& queue,
                                  const std::optional<uint32_t>& queue_family,

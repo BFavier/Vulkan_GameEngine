@@ -28,7 +28,7 @@ namespace GameEngine
         ///< If true, the vsync of the window is enabled
         bool vsync = true;
         ///< Number of samples for the Multi Sample Anti Aliasing
-        unsigned int AA = 1;
+        unsigned int anti_aliasing = 1;
     };
 
     class Window
@@ -75,7 +75,7 @@ namespace GameEngine
         GLFWwindow* glfw() const;
     public:
         ///< This function is called when a window is resized
-        static void resize_callback(GLFWwindow* window, int width, int height);
+        static void _resize_callback(GLFWwindow* window, int width, int height);
     public:
         Keyboard keyboard;
         Mouse mouse;
