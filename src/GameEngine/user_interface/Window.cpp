@@ -5,11 +5,10 @@
 #include <GameEngine/Engine.hpp>
 using namespace GameEngine;
 
-WindowSettings Window::settings;
-
 Window::Window() : keyboard(this), mouse(this)
 {
-    create_window(Window::settings);
+    WindowSettings settings;
+    create_window(settings);
 }
 
 Window::Window(const std::string& title, unsigned int width, unsigned int height) : keyboard(this), mouse(this)
@@ -126,6 +125,11 @@ void Window::vsync(bool enabled)
     {
         glfwSwapInterval(0);
     }
+}
+
+void Window::operator=(const Window& other)
+{
+    //
 }
 
 const VkSurfaceKHR& Window::_get_vk_surface() const

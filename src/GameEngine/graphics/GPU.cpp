@@ -54,15 +54,12 @@ GPU::GPU(VkPhysicalDevice device, const Window* window)
     _query_queue_handle(_graphics_queue, graphics_family, selected_families_count);
     _query_queue_handle(_transfer_queue, transfer_family, selected_families_count);
     _query_queue_handle(_compute_queue, compute_family, selected_families_count);
+    _query_queue_handle(_present_queue, present_family, selected_families_count);
 }
 
 GPU::GPU(const GPU& other)
 {
-    _logical_device = other._get_logical_device();
-    _physical_device = other._get_physical_device();
-    _device_features = other._get_device_features();
-    _device_memory = other._get_device_memory();
-    _device_properties = other._get_device_properties();
+    operator=(other);
 }
 
 GPU::~GPU()
@@ -208,6 +205,7 @@ void GPU::operator=(const GPU& other)
     _graphics_queue = other._get_graphics_queue();
     _compute_queue = other._get_compute_queue();
     _transfer_queue = other._get_transfer_queue();
+    _present_queue = other._get_present_queue();
     _physical_device = other._get_physical_device();
     _logical_device = other._get_logical_device();
     _device_properties = other._get_device_properties();
@@ -228,6 +226,11 @@ const std::optional<VkQueue>& GPU::_get_transfer_queue() const
 const std::optional<VkQueue>& GPU::_get_compute_queue() const
 {
     return _compute_queue;
+}
+
+const std::optional<VkQueue>& GPU::_get_present_queue() const
+{
+    return _present_queue;
 }
 
 const VkPhysicalDevice& GPU::_get_physical_device() const
@@ -330,10 +333,16 @@ std::optional<uint32_t> GPU::_select_present_queue_family(std::vector<VkQueueFam
         {
             VkBool32 present_support = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, window->_get_vk_surface(), &present_support);
+            if (present_support)
+            {
+                queue_family = i;
+                selected_families_count[i] += 1;
+                break;
+            }
         }
     }
+    return queue_family;
 }
-
 
 void GPU::_query_queue_handle(std::optional<VkQueue>& queue,
                               const std::optional<uint32_t>& queue_family,

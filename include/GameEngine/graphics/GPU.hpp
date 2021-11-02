@@ -39,6 +39,7 @@ namespace GameEngine
         const std::optional<VkQueue>& _get_graphics_queue() const;
         const std::optional<VkQueue>& _get_transfer_queue() const;
         const std::optional<VkQueue>& _get_compute_queue() const;
+        const std::optional<VkQueue>& _get_present_queue() const;
         const VkPhysicalDevice& _get_physical_device() const;
         const std::shared_ptr<VkDevice>& _get_logical_device() const;
         const VkPhysicalDeviceProperties& _get_device_properties() const;
@@ -48,7 +49,7 @@ namespace GameEngine
         std::optional<VkQueue> _graphics_queue;
         std::optional<VkQueue> _transfer_queue;
         std::optional<VkQueue> _compute_queue;
-        std::optional<VkQueue> _presentation_queue;
+        std::optional<VkQueue> _present_queue;
         VkPhysicalDevice _physical_device;
         std::shared_ptr<VkDevice> _logical_device;
         VkPhysicalDeviceProperties _device_properties;

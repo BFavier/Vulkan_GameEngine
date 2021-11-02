@@ -35,6 +35,7 @@ namespace GameEngine
     {
     public:
         Window();
+        Window(const Window& other);
         Window(const std::string& title, unsigned int width, unsigned int height);
         Window(const WindowSettings& settings);
         ~Window();
@@ -72,6 +73,8 @@ namespace GameEngine
         ///< Enables or disable vertical syncing
         void vsync(bool enabled);
     public:
+        void operator=(const Window& other);
+    public:
         const VkSurfaceKHR& _get_vk_surface() const;
         ///< Returns the GLFW window pointer
         GLFWwindow* _glfw() const;
@@ -81,7 +84,6 @@ namespace GameEngine
     public:
         Keyboard keyboard;
         Mouse mouse;
-        static WindowSettings settings;
     protected:
         GLFWwindow* _glfw_window;
         VkSurfaceKHR _vk_surface;
