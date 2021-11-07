@@ -1,6 +1,8 @@
 #pragma once
 #include <map>
+#include <memory>
 #include <GLFW/glfw3.h>
+#include "EventsState.hpp"
 #include "Button.hpp"
 
 namespace GameEngine
@@ -11,38 +13,28 @@ namespace GameEngine
     {
     public:
         Mouse() = delete;
-        Mouse(Window* window);
+        Mouse(const Window& window);
+        Mouse(const Mouse& other);
         ~Mouse();
-        Button& button(const std::string& button_name);
-        const std::map<std::string, Button>& buttons() const;
-        double x();
-        double y();
-        double dx();
-        double dy();
-        double wheel_x();
-        double wheel_y();
-        double x_rel();
-        double y_rel();
+    public:
+        const Button& button(const std::string& button_name) const;
+        const std::map<const std::string, Button>& buttons() const;
+        double x() const;
+        double y() const;
+        double dx() const;
+        double dy() const;
+        double wheel_x() const;
+        double wheel_y() const;
+        double x_rel() const;
+        double y_rel() const;
         bool hidden() const;
         void hide(bool hide);
     public:
-        static void button_callback(GLFWwindow* window, int button, int action, int mods);
-        static void position_callback(GLFWwindow* window, double xpos, double ypos);
-        static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-        void set_unchanged();
-        void new_button(const std::string& name, Button status);
-        void new_position(double x, double y);
-        void new_wheel(double wheel_x, double wheel_y);
-        void link();
+        const Mouse& operator=(const Mouse& other);
+    public:
+        std::shared_ptr<EventsState> _get_state() const;
+        void _set_state(const std::shared_ptr<EventsState>& state);
     private:
-        bool _hidden = false;
-        double _x = 0.;
-        double _y = 0.;
-        double _dx = 0.;
-        double _dy = 0.;
-        double _wheel_x = 0.;
-        double _wheel_y = 0.;
-        std::map<std::string, Button> _buttons;
-        Window* _window;
+        std::shared_ptr<EventsState> _state = nullptr;
     };
 }

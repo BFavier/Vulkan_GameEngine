@@ -1,36 +1,13 @@
 #pragma once
 #include <string>
 #include <GameEngine/utilities/External.hpp>
+#include "WindowSettings.hpp"
+#include "EventsState.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
 
 namespace GameEngine
 {
-    class WindowSettings
-    {
-    public:
-        ///< Title of the window
-        std::string title = "window";
-        ///< Width of the window
-        unsigned int width = 500;
-        ///< Height of the window
-        unsigned int height = 500;
-        ///< Number of transparency layers (for 3D rendering)
-        unsigned int transparency_layers = 0;
-        ///< If true the window is created in full screen mode
-        bool full_screen = false;
-        ///< If true, the window is resizable
-        bool resizable = true;
-        ///< If true the window has borders
-        bool borders = true;
-        ///< If true the window is transparent (if the alpha channel of the displayed image is inferior to 1.)
-        bool transparent = false;
-        ///< If true, the vsync of the window is enabled
-        bool vsync = true;
-        ///< Number of samples for the Multi Sample Anti Aliasing
-        unsigned int anti_aliasing = 1;
-    };
-
     class Window
     {
     public:
@@ -42,12 +19,27 @@ namespace GameEngine
     public:
         ///< Update the window's display, and the window's inputs (keyboard and mouse)
         void update();
+        ///< Get the x/y position of the window
+        unsigned int x() const;
+        unsigned int y() const;
+        ///< Move the window to the given position on it's screen
+        void move(unsigned int x, unsigned int y);
+        ///< Get the width/height of the screen the window is on
+        unsigned int screen_width() const;
+        unsigned int screen_height() const;
+        ///< Get the widht/height of the window
+        unsigned int width() const;
+        unsigned int height() const;
         ///< Resize the window to the given width and height
         void resize(unsigned int width, unsigned int height);
+        ///< Returns true if the window is in fullscreen
+        bool full_screen() const;
+        ///< Set whether the window should be in full screen
+        void full_screen(bool enabled);
         ///< Close the window
         void close();
-        ///< Returns false if the user asked for the window to close
-        bool is_open() const;
+        ///< Returns true if the user asked for the window to close
+        bool closing() const;
         ///< Set the title
         void title(const std::string& name);
         ///< Returns the title of the window
@@ -73,23 +65,14 @@ namespace GameEngine
         ///< Enables or disable vertical syncing
         void vsync(bool enabled);
     public:
-        void operator=(const Window& other);
+        const Window& operator=(const Window& other);
     public:
+        const std::shared_ptr<EventsState>& _get_state() const;
         const VkSurfaceKHR& _get_vk_surface() const;
-        ///< Returns the GLFW window pointer
-        GLFWwindow* _glfw() const;
-    public:
-        ///< This function is called when a window is resized
-        static void _resize_callback(GLFWwindow* window, int width, int height);
+    protected:
+        std::shared_ptr<EventsState> _state; // This must be above keyboard and mouse in teh class definition
     public:
         Keyboard keyboard;
         Mouse mouse;
-    protected:
-        GLFWwindow* _glfw_window;
-        VkSurfaceKHR _vk_surface;
-        bool _vsync = true;
-        std::string _title = "window";
-    protected:
-        void create_window(const WindowSettings& settings);
     };
 }

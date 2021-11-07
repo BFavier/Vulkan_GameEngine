@@ -1,8 +1,9 @@
 #pragma once
 #include <map>
 #include <string>
-#include <cctype> //for function "toupper"
+#include <memory>
 #include <GLFW/glfw3.h>
+#include "EventsState.hpp"
 #include "Button.hpp"
 
 namespace GameEngine
@@ -13,18 +14,18 @@ namespace GameEngine
     {
     public:
         Keyboard() = delete;
-        Keyboard(Window* window);
+        Keyboard(const Window& window);
+        Keyboard(const Keyboard& other);
         ~Keyboard();
-        const std::map<std::string, Button>& keys() const;
-        Button& key(const std::string& name);
     public:
-        static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-        void set_unchanged();
-        void link();
+        const std::map<const std::string, Button>& keys() const;
+        const Button& key(const std::string& name) const;
+    public:
+        const Keyboard& operator=(const Keyboard& other);
+    public:
+        const std::shared_ptr<EventsState>& _get_state() const;
+        void _set_state(const std::shared_ptr<EventsState>& state);
     protected:
-        static std::string get_key_name(int key, int scancode);
-    private:
-        Window* _window = nullptr;
-        std::map<std::string, Button> _keys;
+        std::shared_ptr<EventsState> _state = nullptr;
     };
 }

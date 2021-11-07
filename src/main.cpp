@@ -10,7 +10,7 @@ int main()
     Window window;
     Mouse& mouse = window.mouse;
     GPU gpu = GPU::get_best_device();
-    while(window.is_open())
+    while(!window.closing())
     {
         double dx = mouse.dx();
         if (dx != 0)
