@@ -8,13 +8,14 @@
 
 namespace GameEngine
 {
-    // Window events is a class that stores internal state of the window and it's events
-    class EventsState
+    // Handles is a class that stores internal state of the window and it's events
+    class Handles
     {
     public:
-        EventsState() = delete;
-        EventsState(const WindowSettings& settings);
-        ~EventsState();
+        Handles();
+        Handles(const std::string& title, unsigned int width, unsigned int height);
+        Handles(const WindowSettings& settings);
+        ~Handles();
     public:
         unsigned int _window_width = 0;
         unsigned int _window_height = 0;
@@ -41,5 +42,7 @@ namespace GameEngine
         static void _mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
         static void _keyboard_button_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
         static std::string _get_key_name(int key, int scancode);
+    protected:
+        void _initialize(const WindowSettings& settings);
     };
 }

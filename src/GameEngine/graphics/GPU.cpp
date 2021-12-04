@@ -1,32 +1,57 @@
 #include <GameEngine/graphics/GPU.hpp>
 #include <GameEngine/utilities/Macro.hpp>
 #include <set>
-#include <GameEngine/user_interface/Window.hpp>
+#include <GameEngine/user_interface/Handles.hpp>
 
 using namespace GameEngine;
 
-GPU::GPU(VkPhysicalDevice device, const Window* window)
+GPU::GPU(VkPhysicalDevice device, const Handles& events, const std::vector<std::string>& extensions)
 {
-    // device extensions
-    const std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     // Save physical device
     _physical_device = device;
     // List properties and features
     vkGetPhysicalDeviceProperties(device, &_device_properties);
     vkGetPhysicalDeviceFeatures(device, &_device_features);
     vkGetPhysicalDeviceMemoryProperties(device, &_device_memory);
-    // List the queues
+    // List the queue families
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
-    // Select the best matching queue families
+    // list available extensions
+    uint32_t extension_count;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
+    std::vector<VkExtensionProperties> available_extensions(extension_count);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
+    std::vector<std::string> available_extension_names;
+    for (VkExtensionProperties& properties : available_extensions)
+    {
+        available_extension_names.push_back(std::string(properties.extensionName));
+    }
+    // build list of extensions to enable
+    std::vector<const char*> enabled_extensions;
+    for (const std::string& extension_name : extensions)
+    {
+        if (std::find(available_extension_names.begin(), available_extension_names.end(), extension_name) != available_extension_names.end())
+        {
+            enabled_extensions.push_back(extension_name.c_str());
+            _enabled_extensions.insert(extension_name);
+        }
+    }
+    // Check if swap chain extension is supported
+    bool swap_chain_supported = (_enabled_extensions.find(VK_KHR_SWAPCHAIN_EXTENSION_NAME) != _enabled_extensions.end());
+    // Select the best matching queue families for each application
     std::map<uint32_t, uint32_t> selected_families_count;
-    std::optional<uint32_t> graphics_family = _select_queue_family(queue_families, VK_QUEUE_GRAPHICS_BIT, selected_families_count);
-    std::optional<uint32_t> transfer_family = _select_queue_family(queue_families, VK_QUEUE_TRANSFER_BIT, selected_families_count);
-    std::optional<uint32_t> compute_family = _select_queue_family(queue_families, VK_QUEUE_COMPUTE_BIT, selected_families_count);
-    std::optional<uint32_t> present_family = _select_present_queue_family(queue_families, window, selected_families_count);
-    // Create the queue creation infos
+    _graphics_family = _select_queue_family(queue_families, VK_QUEUE_GRAPHICS_BIT, selected_families_count);
+    _transfer_family = _select_queue_family(queue_families, VK_QUEUE_TRANSFER_BIT, selected_families_count);
+    _compute_family = _select_queue_family(queue_families, VK_QUEUE_COMPUTE_BIT, selected_families_count);
+    bool graphics_queue_is_present_queue = false;
+    std::optional<uint32_t> present_family;
+    if (swap_chain_supported)
+    {
+        present_family = _select_present_queue_family(queue_families, events, selected_families_count, _graphics_family, graphics_queue_is_present_queue);
+    }
+    // Create logical device
     float priority = 1.;
     std::vector<VkDeviceQueueCreateInfo> selected_families;
     for (std::pair<const uint32_t, uint32_t>& queue_family_count : selected_families_count)
@@ -38,23 +63,30 @@ GPU::GPU(VkPhysicalDevice device, const Window* window)
         info.pQueuePriorities = &priority;
         selected_families.push_back(info);
     }
-    // Create logical device
-    _logical_device.reset(new VkDevice, GPU::_destroy_device);
-    VkDeviceCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    create_info.pQueueCreateInfos = selected_families.data();
-    create_info.queueCreateInfoCount = selected_families.size();
-    create_info.pEnabledFeatures = &_device_features;
-    VkResult result = vkCreateDevice(_physical_device, &create_info, nullptr, _logical_device.get());
+    VkDeviceCreateInfo device_info = {};
+    device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_info.pQueueCreateInfos = selected_families.data();
+    device_info.queueCreateInfoCount = selected_families.size();
+    device_info.pEnabledFeatures = &_device_features;
+    device_info.ppEnabledExtensionNames = enabled_extensions.data();
+    device_info.enabledExtensionCount = enabled_extensions.size();
+    VkResult result = vkCreateDevice(_physical_device, &device_info, nullptr, &_logical_device);
     if (result != VK_SUCCESS)
     {
         THROW_ERROR("failed to create logical device")
     }
     // retrieve the queue handles
-    _query_queue_handle(_graphics_queue, graphics_family, selected_families_count);
-    _query_queue_handle(_transfer_queue, transfer_family, selected_families_count);
-    _query_queue_handle(_compute_queue, compute_family, selected_families_count);
-    _query_queue_handle(_present_queue, present_family, selected_families_count);
+    _query_queue_handle(_graphics_queue, _graphics_family, selected_families_count);
+    _query_queue_handle(_transfer_queue, _transfer_family, selected_families_count);
+    _query_queue_handle(_compute_queue, _compute_family, selected_families_count);
+    if (graphics_queue_is_present_queue)
+    {
+        _present_queue = _graphics_queue;
+    }
+    else
+    {
+        _query_queue_handle(_present_queue, present_family, selected_families_count);
+    }
 }
 
 GPU::GPU(const GPU& other)
@@ -64,6 +96,7 @@ GPU::GPU(const GPU& other)
 
 GPU::~GPU()
 {
+    vkDestroyDevice(_logical_device, nullptr);
 }
 
 std::string GPU::device_name() const
@@ -128,6 +161,7 @@ GPU::Type GPU::type() const
 
 std::vector<GPU> GPU::get_devices()
 {
+
     VkInstance instance = Engine::get_vulkan_instance();
     // Get the number of devices
     uint32_t device_count = 0;
@@ -135,11 +169,15 @@ std::vector<GPU> GPU::get_devices()
     // Get all the devices
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+    // Create the dummy window
+    WindowSettings settings;
+    settings.visible = false;
+    Handles events(settings);
     // Return the GPU objects
     std::vector<GPU> GPUs;
     for(VkPhysicalDevice& device : devices)
     {
-        GPUs.push_back(GPU(device, nullptr));
+        GPUs.push_back(GPU(device, events));
     }
     return GPUs;
 }
@@ -191,71 +229,18 @@ GPU GPU::get_best_device()
     return subset[i_max];
 }
 
-void GPU::_destroy_device(VkDevice* logical_device)
-{
-    if (logical_device != nullptr)
-    {
-        vkDestroyDevice(*logical_device, nullptr);
-        delete logical_device;
-    }
-}
-
 void GPU::operator=(const GPU& other)
 {
-    _graphics_queue = other._get_graphics_queue();
-    _compute_queue = other._get_compute_queue();
-    _transfer_queue = other._get_transfer_queue();
-    _present_queue = other._get_present_queue();
-    _physical_device = other._get_physical_device();
-    _logical_device = other._get_logical_device();
-    _device_properties = other._get_device_properties();
-    _device_features = other._get_device_features();
-    _device_memory = other._get_device_memory();
-}
-
-const std::optional<VkQueue>& GPU::_get_graphics_queue() const
-{
-    return _graphics_queue;
-}
-
-const std::optional<VkQueue>& GPU::_get_transfer_queue() const
-{
-    return _transfer_queue;
-}
-
-const std::optional<VkQueue>& GPU::_get_compute_queue() const
-{
-    return _compute_queue;
-}
-
-const std::optional<VkQueue>& GPU::_get_present_queue() const
-{
-    return _present_queue;
-}
-
-const VkPhysicalDevice& GPU::_get_physical_device() const
-{
-    return _physical_device;
-}
-
-const std::shared_ptr<VkDevice>& GPU::_get_logical_device() const
-{
-    return _logical_device;
-}
-
-const VkPhysicalDeviceProperties& GPU::_get_device_properties() const
-{
-    return _device_properties;
-}
-
-const VkPhysicalDeviceFeatures& GPU::_get_device_features() const
-{
-    return _device_features;
-}
-
-const VkPhysicalDeviceMemoryProperties& GPU::_get_device_memory() const
-{
-    return _device_memory;
+    _physical_device = other._physical_device;
+    _device_properties = other._device_properties;
+    _device_features = other._device_features;
+    _device_memory = other._device_memory;
+    _graphics_queue = other._graphics_queue;
+    _compute_queue = other._compute_queue;
+    _transfer_queue = other._transfer_queue;
+    _present_queue = other._present_queue;
+    _enabled_extensions = other._enabled_extensions;
+    _logical_device = other._logical_device;
 }
 
 std::optional<uint32_t> GPU::_select_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
@@ -323,22 +308,33 @@ std::optional<uint32_t> GPU::_select_queue_family(std::vector<VkQueueFamilyPrope
 }
 
 std::optional<uint32_t> GPU::_select_present_queue_family(std::vector<VkQueueFamilyProperties>& queue_families,
-                                                          const Window* window,
-                                                          std::map<uint32_t, uint32_t>& selected_families_count) const
+                                                          const Handles& events, std::map<uint32_t, uint32_t>& selected_families_count,
+                                                          const std::optional<uint32_t>& graphics_family, bool& graphics_queue_is_present_queue) const
 {
     std::optional<uint32_t> queue_family;
-    if (window != nullptr)
+    graphics_queue_is_present_queue = false;
+    // Check if the graphic queue can be the present queue
+    if (graphics_family.has_value())
     {
-        for (uint32_t i=0; i<queue_families.size(); i++)
+        VkBool32 present_support = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, graphics_family.value(), events._vk_surface, &present_support);
+        if (present_support)
         {
-            VkBool32 present_support = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, window->_get_vk_surface(), &present_support);
-            if (present_support)
-            {
-                queue_family = i;
-                selected_families_count[i] += 1;
-                break;
-            }
+            graphics_queue_is_present_queue = true;
+            return graphics_family;
+        }
+    }
+    // Otherwise look up for a queue family that can handle presenting to a window
+    for (uint32_t i=0; i<queue_families.size(); i++)
+    {
+        VkBool32 present_support = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(_physical_device, i, events._vk_surface, &present_support);
+        if (present_support && queue_families[i].queueCount > 0)
+        {
+            queue_family = i;
+            queue_families[i].queueCount -= 1;
+            selected_families_count[i] += 1;
+            break;
         }
     }
     return queue_family;
@@ -352,7 +348,7 @@ void GPU::_query_queue_handle(std::optional<VkQueue>& queue,
     {
         uint32_t family = queue_family.value();
         VkQueue queried_queue;
-        vkGetDeviceQueue(*_logical_device, family, selected_families_count[family]-1, &queried_queue);
+        vkGetDeviceQueue(_logical_device, family, selected_families_count[family]-1, &queried_queue);
         queue = queried_queue;
         selected_families_count[family] -= 1;
     }

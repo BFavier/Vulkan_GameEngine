@@ -2,7 +2,7 @@
 #include <map>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include "EventsState.hpp"
+#include "Handles.hpp"
 #include "Button.hpp"
 
 namespace GameEngine
@@ -32,9 +32,9 @@ namespace GameEngine
     public:
         const Mouse& operator=(const Mouse& other);
     public:
-        std::shared_ptr<EventsState> _get_state() const;
-        void _set_state(const std::shared_ptr<EventsState>& state);
+        std::shared_ptr<Handles> _get_state() const;
+        void _set_state(const std::shared_ptr<Handles>& state);
     private:
-        std::shared_ptr<EventsState> _state = nullptr;
+        std::shared_ptr<Handles> _state = nullptr;
     };
 }

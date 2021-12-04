@@ -2,32 +2,23 @@
 #include <GameEngine/user_interface/Keyboard.hpp>
 #include <GameEngine/user_interface/Mouse.hpp>
 #include <GameEngine/utilities/External.hpp>
+#include <GameEngine/graphics/GPU.hpp>
 using namespace GameEngine;
 
-Window::Window() : _state(), keyboard(*this), mouse(*this)
+Window::Window(const GPU& _gpu) : _state(new Handles()), keyboard(*this), mouse(*this), gpu(_gpu), swap_chain(_gpu, *this)
 {
-    WindowSettings settings;
-    _state.reset(new EventsState(settings));
-    keyboard._set_state(_state);
-    mouse._set_state(_state);
 }
 
-Window::Window(const std::string& title, unsigned int width, unsigned int height) : _state(), keyboard(*this), mouse(*this)
+Window::Window(const Window& other) : _state(other._state), keyboard(other.keyboard), mouse(other.mouse), gpu(other.gpu), swap_chain(other.gpu, *this)
 {
-    WindowSettings settings;
-    settings.title = title;
-    settings.width = width;
-    settings.height = height;
-    _state.reset(new EventsState(settings));
-    keyboard._set_state(_state);
-    mouse._set_state(_state);
 }
 
-Window::Window(const WindowSettings& settings) : _state(), keyboard(*this), mouse(*this)
+Window::Window(const GPU& _gpu, const std::string& title, unsigned int width, unsigned int height) : _state(new Handles(title, width, height)), keyboard(*this), mouse(*this), gpu(_gpu), swap_chain(_gpu, *this)
 {
-    _state.reset(new EventsState(settings));
-    keyboard._set_state(_state);
-    mouse._set_state(_state);
+}
+
+Window::Window(const GPU& _gpu, const WindowSettings& settings) : _state(new Handles(settings)), keyboard(*this), mouse(*this), gpu(_gpu), swap_chain(_gpu, *this)
+{
 }
 
 Window::~Window()
@@ -203,13 +194,7 @@ void Window::vsync(bool enabled)
     }
 }
 
-const Window& Window::operator=(const Window& other)
-{
-    _state = other._get_state();
-    return *this;
-}
-
-const std::shared_ptr<EventsState>& Window::_get_state() const
+const std::shared_ptr<Handles>& Window::_get_state() const
 {
     return _state;
 }

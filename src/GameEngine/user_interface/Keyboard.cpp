@@ -7,6 +7,11 @@ Keyboard::Keyboard(const Window& window)
     _state = window._get_state();
 }
 
+Keyboard::Keyboard(const Keyboard& other)
+{
+    *this = other;
+}
+
 Keyboard::~Keyboard()
 {
 }
@@ -32,12 +37,12 @@ const Keyboard& Keyboard::operator=(const Keyboard& other)
     return *this;
 }
 
-const std::shared_ptr<EventsState>& Keyboard::_get_state() const
+const std::shared_ptr<Handles>& Keyboard::_get_state() const
 {
     return _state;
 }
 
-void Keyboard::_set_state(const std::shared_ptr<EventsState>& state)
+void Keyboard::_set_state(const std::shared_ptr<Handles>& state)
 {
     _state = state;
 }

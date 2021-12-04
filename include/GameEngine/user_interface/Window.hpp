@@ -2,19 +2,22 @@
 #include <string>
 #include <GameEngine/utilities/External.hpp>
 #include "WindowSettings.hpp"
-#include "EventsState.hpp"
+#include "Handles.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
+#include <GameEngine/graphics/SwapChain.hpp>
 
 namespace GameEngine
 {
+
     class Window
     {
     public:
-        Window();
+        Window() = delete;
+        Window(const GPU& gpu);
         Window(const Window& other);
-        Window(const std::string& title, unsigned int width, unsigned int height);
-        Window(const WindowSettings& settings);
+        Window(const GPU& gpu, const std::string& title, unsigned int width, unsigned int height);
+        Window(const GPU& gpu, const WindowSettings& settings);
         ~Window();
     public:
         ///< Update the window's display, and the window's inputs (keyboard and mouse)
@@ -65,14 +68,14 @@ namespace GameEngine
         ///< Enables or disable vertical syncing
         void vsync(bool enabled);
     public:
-        const Window& operator=(const Window& other);
-    public:
-        const std::shared_ptr<EventsState>& _get_state() const;
+        const std::shared_ptr<Handles>& _get_state() const;
         const VkSurfaceKHR& _get_vk_surface() const;
     protected:
-        std::shared_ptr<EventsState> _state; // This must be above keyboard and mouse in teh class definition
+        std::shared_ptr<Handles> _state; // This must be above keyboard and mouse in the class definition
     public:
         Keyboard keyboard;
         Mouse mouse;
+        const GPU& gpu;
+        SwapChain swap_chain;
     };
 }

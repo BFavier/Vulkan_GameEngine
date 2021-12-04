@@ -8,14 +8,19 @@ namespace GameEngine
     public:
         Timer();
         ~Timer();
-        //!< Time in seconds since last call to dt with reset=true (or since creation time)
-        double dt(bool reset=true);
         //!< Time in seconds since creation of the timer.
         double t() const;
-        //!< Restarts the timer as if it was just created.
+        //!< Time in seconds since last call to dt (or since creation time)
+        double peak_dt();
+        //!< Time in seconds since last call to dt (or since creation time)
+        double dt();
+        // Reset the dt timer
+        void reset_dt();
+        //!< Reset the t and dt timers.
         void restart();
     private:
         std::chrono::time_point<std::chrono::steady_clock> _start;
         std::chrono::time_point<std::chrono::steady_clock> _last;
+    protected:
     };
 }

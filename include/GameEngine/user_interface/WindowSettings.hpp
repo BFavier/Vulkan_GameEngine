@@ -14,6 +14,8 @@ namespace GameEngine
         unsigned int height = 500;
         ///< Number of transparency layers (for 3D rendering)
         unsigned int transparency_layers = 0;
+        ///< If True the window is visible
+        bool visible = true;
         ///< If true the window is created in full screen mode
         bool full_screen = false;
         ///< If true, the window is resizable

@@ -1,90 +1,46 @@
-#include <GameEngine/user_interface/EventsState.hpp>
+#include <GameEngine/user_interface/Handles.hpp>
 #include <GameEngine/Engine.hpp>
 
 using namespace GameEngine;
 
-EventsState::EventsState(const WindowSettings& settings)
+Handles::Handles()
 {
-    Engine::initialize();
-    //Create the GLFW window
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
-    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, settings.transparent);
-    glfwWindowHint(GLFW_DECORATED, settings.borders);
-    unsigned int width = settings.width;
-    unsigned int height = settings.height;
-    GLFWmonitor* monitor = nullptr;
-    const GLFWvidmode* mode = nullptr;
-    _window_full_screen = settings.full_screen;
-    if (settings.full_screen)
-    {
-        monitor = glfwGetPrimaryMonitor();
-        mode = glfwGetVideoMode(monitor);
-        width = mode->width;
-        height = mode->height;
-        glfwSetWindowSize(_glfw_window, width, height);
-    }
-    _window_vsync = settings.vsync;
-    _window_title = settings.title;
-    _glfw_window = glfwCreateWindow(width, height, _window_title.c_str(), monitor, nullptr);
-    if (_glfw_window == nullptr)
-    {
-        throw std::runtime_error("Failed to create the window");
-    }
-    //Link to the keyboard and mouse events
-    glfwSetWindowUserPointer(_glfw_window, this);
-    // Setup mouse events
-    if (glfwRawMouseMotionSupported())
-    {
-        glfwSetInputMode(_glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    }
-    glfwSetMouseButtonCallback(_glfw_window, _mouse_button_callback);
-    glfwSetCursorPosCallback(_glfw_window, _mouse_position_callback);
-    glfwSetScrollCallback(_glfw_window, _mouse_scroll_callback);
-    glfwGetCursorPos(_glfw_window, &_mouse_x, &_mouse_y);
-    _mouse_buttons["LEFT CLICK"];
-    _mouse_buttons["RIGHT CLICK"];
-    _mouse_buttons["MIDDLE CLICK"];
-    _mouse_buttons["MB4"];
-    _mouse_buttons["MB5"];
-    _mouse_buttons["MB6"];
-    _mouse_buttons["MB7"];
-    _mouse_buttons["MB8"];
-    // Setup keyboard events
-    glfwSetKeyCallback(_glfw_window, _keyboard_button_callback);
-    for (int i=0; i<357; i++)
-    {
-        std::string name = _get_key_name(i, 0);
-        _keyboard_buttons[name];
-    }
-    // Setup window events
-    glfwSetWindowSizeCallback(_glfw_window, _window_resize_callback);
-    // Create the vkSurface
-    VkResult result = glfwCreateWindowSurface(Engine::get_vulkan_instance(), _glfw_window, NULL, &_vk_surface);
-    if (result != VK_SUCCESS)
-    {
-        THROW_ERROR("Failed to create the Vulkan surface")
-    }
+    WindowSettings settings;
+    _initialize(settings);
 }
 
-EventsState::~EventsState()
+Handles::Handles(const std::string& title, unsigned int width, unsigned int height)
+{
+    WindowSettings settings;
+    settings.title = title;
+    settings.width = width;
+    settings.height = height;
+    _initialize(settings);
+}
+
+Handles::Handles(const WindowSettings& settings)
+{
+    _initialize(settings);
+}
+
+Handles::~Handles()
 {
     glfwDestroyWindow(_glfw_window);
     vkDestroySurfaceKHR(Engine::get_vulkan_instance(), _vk_surface, nullptr);
 }
 
-void EventsState::_window_resize_callback(GLFWwindow* window, int width, int height)
+void Handles::_window_resize_callback(GLFWwindow* window, int width, int height)
 {
-    EventsState* h = static_cast<EventsState*>(glfwGetWindowUserPointer(window));
+    Handles* h = static_cast<Handles*>(glfwGetWindowUserPointer(window));
     h->_window_width = width;
     h->_window_height = height;
     // glfwSetWindowSize(h->_glfw_window, width, height);
 }
 
-void EventsState::_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void Handles::_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     (void)mods;//Silence the annoying unused parameter warning
-    EventsState* h = static_cast<EventsState*>(glfwGetWindowUserPointer(window));
+    Handles* h = static_cast<Handles*>(glfwGetWindowUserPointer(window));
     std::string name;
     if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
@@ -103,53 +59,53 @@ void EventsState::_mouse_button_callback(GLFWwindow* window, int button, int act
         name = "MB"+std::to_string(button+1);
     }
     Button& status = h->_mouse_buttons[name];
-    if (action == GLFW_PRESS && status.down == false)
+    if (action == GLFW_PRESS)
     {
         status.down = true;
-        status.changed = true;
+        status.was_pressed = true;
     }
-    else if (action == GLFW_RELEASE && status.down == true)
+    else if (action == GLFW_RELEASE)
     {
         status.down = false;
-        status.changed = true;
+        status.was_released = true;
     }
 }
 
-void EventsState::_mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
+void Handles::_mouse_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    EventsState* h = static_cast<EventsState*>(glfwGetWindowUserPointer(window));
+    Handles* h = static_cast<Handles*>(glfwGetWindowUserPointer(window));
     h->_mouse_dx = xpos - h->_mouse_x;
     h->_mouse_dy = ypos - h->_mouse_y;
     h->_mouse_x = xpos;
     h->_mouse_y = ypos;
 }
 
-void EventsState::_mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void Handles::_mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    EventsState* h = static_cast<EventsState*>(glfwGetWindowUserPointer(window));
+    Handles* h = static_cast<Handles*>(glfwGetWindowUserPointer(window));
     h->_mouse_wheel_x = xoffset;
     h->_mouse_wheel_y = yoffset;
 }
 
-void EventsState::_keyboard_button_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void Handles::_keyboard_button_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     (void)mods;//Silence the annoying unused parameter warning
-    EventsState* h = static_cast<EventsState*>(glfwGetWindowUserPointer(window));
+    Handles* h = static_cast<Handles*>(glfwGetWindowUserPointer(window));
     std::string name = _get_key_name(key, scancode);
     Button& button = h->_keyboard_buttons[name];
-    if (action == GLFW_PRESS && button.down == false)
+    if (action == GLFW_PRESS)
     {
         button.down = true;
-        button.changed = true;
+        button.was_pressed = true;
     }
-    else if (action == GLFW_RELEASE && button.down == true)
+    else if (action == GLFW_RELEASE)
     {
         button.down = false;
-        button.changed = true;
+        button.was_released = true;
     }
 }
 
-std::string EventsState::_get_key_name(int key, int scancode)
+std::string Handles::_get_key_name(int key, int scancode)
 {
     switch (key)
     {
@@ -253,18 +209,84 @@ std::string EventsState::_get_key_name(int key, int scancode)
     return "UNKNOWN";
 }
 
-void EventsState::_set_unchanged()
+void Handles::_set_unchanged()
 {
     for (std::pair<const std::string, Button>& button : _keyboard_buttons)
     {
-        button.second.changed = false;
+        button.second.was_pressed = false;
+        button.second.was_released = false;
     }
     for (std::pair<const std::string, Button>& button : _mouse_buttons)
     {
-        button.second.changed = false;
+        button.second.was_pressed = false;
+        button.second.was_released = false;
     }
     _mouse_dx = 0.;
     _mouse_dy = 0.;
     _mouse_wheel_x = 0.;
     _mouse_wheel_y = 0.;
+}
+
+void Handles::_initialize(const WindowSettings& settings)
+{
+    Engine::initialize();
+    //Create the GLFW window
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_VISIBLE, settings.visible);
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, settings.transparent);
+    glfwWindowHint(GLFW_DECORATED, settings.borders);
+    unsigned int width = settings.width;
+    unsigned int height = settings.height;
+    GLFWmonitor* monitor = nullptr;
+    const GLFWvidmode* mode = nullptr;
+    _window_full_screen = settings.full_screen;
+    if (settings.full_screen)
+    {
+        monitor = glfwGetPrimaryMonitor();
+        mode = glfwGetVideoMode(monitor);
+        width = mode->width;
+        height = mode->height;
+        glfwSetWindowSize(_glfw_window, width, height);
+    }
+    _window_vsync = settings.vsync;
+    _window_title = settings.title;
+    _glfw_window = glfwCreateWindow(width, height, _window_title.c_str(), monitor, nullptr);
+    if (_glfw_window == nullptr)
+    {
+        throw std::runtime_error("Failed to create the window");
+    }
+    //Link to the keyboard and mouse events
+    glfwSetWindowUserPointer(_glfw_window, this);
+    // Setup mouse events
+    if (glfwRawMouseMotionSupported())
+    {
+        glfwSetInputMode(_glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+    glfwSetMouseButtonCallback(_glfw_window, _mouse_button_callback);
+    glfwSetCursorPosCallback(_glfw_window, _mouse_position_callback);
+    glfwSetScrollCallback(_glfw_window, _mouse_scroll_callback);
+    glfwGetCursorPos(_glfw_window, &_mouse_x, &_mouse_y);
+    _mouse_buttons["LEFT CLICK"];
+    _mouse_buttons["RIGHT CLICK"];
+    _mouse_buttons["MIDDLE CLICK"];
+    _mouse_buttons["MB4"];
+    _mouse_buttons["MB5"];
+    _mouse_buttons["MB6"];
+    _mouse_buttons["MB7"];
+    _mouse_buttons["MB8"];
+    // Setup keyboard events
+    glfwSetKeyCallback(_glfw_window, _keyboard_button_callback);
+    for (int i=0; i<357; i++)
+    {
+        std::string name = _get_key_name(i, 0);
+        _keyboard_buttons[name];
+    }
+    // Setup window events
+    glfwSetWindowSizeCallback(_glfw_window, _window_resize_callback);
+    // Create the vkSurface
+    VkResult result = glfwCreateWindowSurface(Engine::get_vulkan_instance(), _glfw_window, NULL, &_vk_surface);
+    if (result != VK_SUCCESS)
+    {
+        THROW_ERROR("Failed to create the Vulkan surface")
+    }
 }
