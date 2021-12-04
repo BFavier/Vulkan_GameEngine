@@ -1,4 +1,5 @@
 #pragma once
+#include "GPU.hpp"
 #include <GameEngine/utilities/Macro.hpp>
 #include <vector>
 #include <string>
@@ -10,8 +11,16 @@ namespace GameEngine
     {
     public:
         Shader() = delete;
+        Shader(const Shader& other);
+        Shader(const GPU& gpu, const std::string& file_path);
+        Shader(const GPU& gpu, const std::vector<unsigned char>& code);
         ~Shader();
+    public:
+        const GPU& gpu;
+        VkShaderModule _vk_shader;
+    public:
+        static std::vector<unsigned char> load_binary(const std::string& file_path);
     protected:
-        std::vector<unsigned char> _load_binary(const std::string& file_path) const;
+        void _set_vk_shader(const std::vector<unsigned char>& code);
     };
 }
